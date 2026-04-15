@@ -1,7 +1,10 @@
 import axios from 'axios';
 import type { Application, ApplicationRequest, AnalyzeRequest, AnalyzeResponse } from '../types';
 
-const BASE = '/api/applications';
+// Always use relative paths — works both locally (Vite proxy)
+// and in production (CloudFront proxy)
+const BASE    = '/api/applications';
+const ANALYZE = '/api/analyze';
 
 export const getApplications = async (): Promise<Application[]> => {
   const res = await axios.get<Application[]>(BASE);
@@ -28,6 +31,6 @@ export const deleteApplication = async (id: number): Promise<void> => {
 };
 
 export const analyzeResume = async (data: AnalyzeRequest): Promise<AnalyzeResponse> => {
-  const res = await axios.post<AnalyzeResponse>('/api/analyze', data);
+  const res = await axios.post<AnalyzeResponse>(ANALYZE, data);
   return res.data;
 };
