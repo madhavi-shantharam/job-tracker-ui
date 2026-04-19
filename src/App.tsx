@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
 import ApplicationForm from './pages/ApplicationForm';
 import AnalyzePage from './pages/AnalyzePage';
+import ResumesPage from './pages/ResumesPage';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
             <Route path="/add"       element={<ApplicationForm />} />
             <Route path="/edit/:id"  element={<ApplicationForm />} />
             <Route path="/analyze"   element={<AnalyzePage />} />
+            <Route path="/resumes"   element={<ResumesPage />} />
           </Routes>
         </main>
       </div>

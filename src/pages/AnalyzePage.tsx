@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { analyzeResume, getApplications } from '../api/applications';
+import { getResumes, getResumeContent } from '../api/resumes';
 import type { AnalyzeResponse, Application } from '../types';
+import type { Resume } from '../types/resume';
 import AnalysisResults from '../components/AnalysisResults';
+import { useToastContext } from '../context/ToastContext';
 
 export default function AnalyzePage() {
+  const { addToast } = useToastContext();
   const [jobDescription, setJobDescription] = useState('');
   const [resumeText, setResumeText]         = useState('');
   const [analyzing, setAnalyzing]           = useState(false);
@@ -15,12 +19,21 @@ export default function AnalyzePage() {
   const [selectedAppId, setSelectedAppId]       = useState<string>('');
   const [selectedCompany, setSelectedCompany]   = useState<string>('');
 
-  // Load saved applications on mount for the dropdown
+  // For the "load saved resume" feature
+  const [resumes, setResumes]                   = useState<Resume[]>([]);
+  const [selectedResumeId, setSelectedResumeId] = useState<string>('');
+  const [loadingResume, setLoadingResume]       = useState(false);
+
+  // Load saved applications and resumes on mount
   useEffect(() => {
     getApplications()
       .then(data => setApplications(
         data.filter(a => a.jobDescriptionText && a.jobDescriptionText.trim() !== '')
       ))
+      .catch(() => {}); // Silently fail — dropdown is a convenience feature
+
+    getResumes()
+      .then(setResumes)
       .catch(() => {}); // Silently fail — dropdown is a convenience feature
   }, []);
 
@@ -39,6 +52,22 @@ export default function AnalyzePage() {
     if (app) {
       setJobDescription(app.jobDescriptionText ?? '');
       setSelectedCompany(app.company);
+    }
+  };
+
+  const handleResumeSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    if (!id) return;
+    setSelectedResumeId(id);
+    setLoadingResume(true);
+    try {
+      const text = await getResumeContent(id);
+      setResumeText(text);
+    } catch (err: any) {
+      addToast(err.userMessage ?? 'Failed to load resume content.', 'error');
+    } finally {
+      setLoadingResume(false);
+      setSelectedResumeId(''); // reset dropdown
     }
   };
 
@@ -137,6 +166,35 @@ export default function AnalyzePage() {
             <p className="text-xs text-gray-400">
               {jobDescription.length} characters
             </p>
+          </div>
+
+          {/* Load saved resume */}
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+            <label className="text-sm font-medium text-indigo-800 block mb-2">
+              📄 Load saved resume
+            </label>
+            <div className="relative">
+              <select
+                value={selectedResumeId}
+                onChange={handleResumeSelect}
+                disabled={loadingResume || resumes.length === 0}
+                className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {resumes.length === 0 ? (
+                  <option value="">No saved resumes</option>
+                ) : (
+                  <>
+                    <option value="">— select a saved resume —</option>
+                    {resumes.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </>
+                )}
+              </select>
+              {loadingResume && (
+                <span className="absolute right-8 top-1/2 -translate-y-1/2 animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full" />
+              )}
+            </div>
           </div>
 
           {/* Resume Text */}
